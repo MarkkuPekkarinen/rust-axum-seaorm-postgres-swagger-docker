@@ -1,285 +1,286 @@
-# Axum + SeaORM + PostgreSQL Tutorial
-
-A working tutorial for building a **REST API** with:
-
-* **Axum** (web framework)
-* **SeaORM** (type-safe ORM)
-* **PostgreSQL** (database)
-* **Docker & Compose** (local dev + deployment)
-
-> A complete, working example that you can run and modify.
-
-For a comprehensive guide with detailed explanations, code walkthroughs, and best practices, check out the full [Medium article](https://medium.com/@scraiber/building-lightning-fast-apis-with-rust-a-complete-axum-seaorm-postgresql-tutorial-5a196dab86a1).
+<p align="center">
+  <img src="https://img.shields.io/github/license/asepindrak/rust-axum-seaorm-postgres-swagger-docker" />
+  <img src="https://img.shields.io/badge/Rust-1.80+-orange?logo=rust" />
+  <img src="https://img.shields.io/badge/Axum-0.8-blue?logo=rust" />
+  <img src="https://img.shields.io/badge/SeaORM-1.1-green" />
+  <img src="https://img.shields.io/badge/PostgreSQL-17-blue?logo=postgresql" />
+  <img src="https://img.shields.io/badge/Docker-ready-0db7ed?logo=docker" />
+</p>
 
 ---
 
-## Table of Contents
 
-1. [What You'll Build](#what-youll-build)
-2. [Prerequisites](#prerequisites)
-3. [Quick Start](#quick-start)
-4. [Project Structure](#project-structure)
-5. [How It Works](#how-it-works)
-6. [Development](#development)
-7. [Production Deployment](#production-deployment)
-8. [API Usage](#api-usage)
+# Rust Axum + SeaORM + PostgreSQL + PgAdmin + Swagger + Docker
 
----
+A fully containerized boilerplate for building a scalable **Rust backend** using:
 
-## What You'll Build
-
-A **CRUD API for Users** with:
-
-* Axum routes and handlers
-* SeaORM entities & queries
-* PostgreSQL database
-* Docker setup with hot reload
+- **Axum 0.8** – async web framework  
+- **SeaORM** – async ORM  
+- **PostgreSQL 17**  
+- **PgAdmin 4** – GUI database management  
+- **Swagger UI + Utoipa** – OpenAPI documentation  
+- **Docker Compose** – development environment with hot-reload  
 
 ---
 
-## Prerequisites
+## 📁 Repository
 
-* **Docker** and **Docker Compose**
-* **Git** (to clone the repository)
+Source code repository:  
+**https://github.com/asepindrak/rust-axum-seaorm-postgres-swagger-docker**
 
----
-
-## Quick Start
-
-### 1) Clone and run
-
+Clone the project:
 ```bash
-git clone https://github.com/scraiber/axum-seaorm-tutorial.git
-cd axum-seaorm-tutorial
-docker-compose up --build
+git clone https://github.com/asepindrak/rust-axum-seaorm-postgres-swagger-docker.git
 ```
-
-This will:
-* Start PostgreSQL database
-* Run the initial migration (creates the `users` table)
-* Build and start the Axum API
-* Expose the API at **http://localhost:3000** (this may take a few minutes due to compilation, you can check via `docker-compose logs app`)
-
-### 2) Test the API
-
-```bash
-curl http://localhost:3000/
-# {"status":"ok"}
-```
-
-The API is ready! 🎉
 
 ---
 
-## Project Structure
+## 🚀 Features
+
+- Layered architecture:  
+  `routes → services → repositories → entities`
+- Hot reload using `cargo watch`
+- Auto OpenAPI generation via `utoipa`
+- Built‑in Swagger UI at: **http://localhost:3000/swagger**
+- PgAdmin at: **http://localhost:8080**
+- PostgreSQL volume persistence
+- Environment‑based configuration
+- Fully dockerized setup
+
+---
+
+## 🏗️ Architecture Overview
+              ┌───────────────────────────────┐
+              │            Client              │
+              └───────────────┬───────────────┘
+                              │ HTTP (REST)
+                              ▼
+                ┌───────────────────────────┐
+                │           Axum            │
+                │        (Routes Layer)     │
+                └───────────────┬──────────┘
+                                │ calls
+                                ▼
+                ┌───────────────────────────┐
+                │         Services          │
+                │  (Business Logic Layer)   │
+                └───────────────┬──────────┘
+                                │ calls
+                                ▼
+                ┌───────────────────────────┐
+                │       Repositories        │
+                │        (Data Access)      │
+                └───────────────┬──────────┘
+                                │ SeaORM
+                                ▼
+                   ┌───────────────────────┐
+                   │     PostgreSQL 17     │
+                   └───────────────────────┘
+
+            ┌────────────────────────────────────┐
+            │            PgAdmin 4               │
+            │ (Inspect database / backup / UI)   │
+            └────────────────────────────────────┘
+
+
+
+---
+
+## 📁 Project Structure
 
 ```
-axum-seaorm-tutorial/
+rust-axum-seaorm-postgres-swagger-docker/
+│
 ├── src/
-│   ├── entities/          # SeaORM entity definitions
+│   ├── app_state.rs
+│   ├── main.rs
+│   ├── errors.rs
+│   ├── openapi.rs
+│   │
+│   ├── routes/
 │   │   ├── mod.rs
-│   │   └── user.rs
-│   ├── handlers.rs        # HTTP handlers (business logic)
-│   └── main.rs            # App entry: router, DB, tracing, server
+│   │   ├── health.rs
+│   │   └── users.rs
+│   │
+│   ├── services/
+│   │   ├── mod.rs
+│   │   └── user_service.rs
+│   │
+│   ├── repositories/
+│   │   ├── mod.rs
+│   │   └── sea_user_repo.rs
+│   │
+│   ├── dto/
+│   │   ├── mod.rs
+│   │   └── user_dto.rs
+│   │
+│   └── entities/
+│       ├── mod.rs
+│       └── user.rs
+│
 ├── migrations/
-│   └── init.sql           # Initial schema (users table, indexes)
-├── Dockerfile             # Production image
-├── Dockerfile.dev         # Dev image with hot-reload
-├── docker-compose.yml     # App + DB orchestration
-├── Cargo.toml             # Rust dependencies + metadata
-├── manual.txt             # Manual testing commands
-└── README.md              # This tutorial
-```
-
-**Key files:**
-
-* **`src/main.rs`** - App setup: database connection, routes, middleware
-* **`src/handlers.rs`** - HTTP handlers for CRUD operations
-* **`src/entities/user.rs`** - SeaORM model for the `users` table
-* **`migrations/init.sql`** - Database schema
-* **`docker-compose.yml`** - Development environment setup
-
----
-
-## How It Works
-
-1. **Request** hits Axum route (e.g., `POST /users`)
-2. Axum **extractors** parse JSON and path parameters
-3. **Handler** calls SeaORM **Entity/ActiveModel** functions
-4. SeaORM generates SQL and talks to **PostgreSQL** via the **DB pool**
-5. Result is serialized to JSON and returned with proper **status codes**
-6. **tracing** logs request/response metadata
-
----
-
-## Development
-
-### Hot Reload
-
-The development setup includes **hot reload** - when you edit files in the `src/` directory, the application automatically recompiles and restarts. This is powered by `cargo-watch` in the `Dockerfile.dev`.
-
-**How it works:**
-- Edit any file in `src/` (like `handlers.rs` or `main.rs`)
-- Save the file
-- The container detects the change and recompiles
-- The API restarts with your changes
-- No need to manually restart Docker
-
-**Example - Test hot reload:**
-1. Edit `src/handlers.rs` and change line 53 from:
-   ```rust
-   status: "ok".to_string(),
-   ```
-   to:
-   ```rust
-   status: "ok after hot reload".to_string(),
-   ```
-2. Save the file
-3. Wait a few seconds for recompilation
-4. Test: `curl http://localhost:3000/`
-5. You should see: `{"status":"ok after hot reload"}`
-
-### Start/stop
-
-```bash
-# Start with hot reload
-docker-compose up --build
-
-# Stop everything
-docker-compose down
-
-# Clean volumes (start fresh DB)
-docker-compose down -v
-```
-
-### View logs
-
-```bash
-# App logs (live)
-docker-compose logs -f app
-
-# DB logs
-docker-compose logs -f db
-```
-
-### Database shell
-
-```bash
-# Connect to the database
-docker-compose exec db psql -U postgres -d axum_seaorm
-```
-
-> **Pro tip:** Keep the app logs open in a terminal while coding. You'll see recompilation messages when you save changes, and any compilation errors will be displayed immediately.
-
----
-
-## Production Deployment
-
-### 🚀 Ultra-Minimal Production Container (10MB!)
-
-This project includes an optimized production Dockerfile that creates an **extremely small and secure** container:
-
-**Key Features:**
-- **~10MB total size** (vs hundreds of MB for typical containers!)
-- **Scratch-based**: No OS, no shell, no package manager
-- **Static linking**: Self-contained binary with no runtime dependencies
-- **Maximum security**: Minimal attack surface
-- **Fast startup**: Minimal overhead
-
-### Build Production Image
-
-```bash
-# Build the production image
-docker build -t axum-seaorm:prod -f Dockerfile .
-
-# Check the image size (should be ~10MB!)
-docker images axum-seaorm:prod
-```
-
-### Run Production Container
-
-```bash
-# Start your database first
-docker-compose up -d db
-
-# Run the production container
-docker run -d \
-  --name axum-seaorm-prod \
-  --network axum-seaorm-tutorial_default \
-  -p 3000:3000 \
-  -e DATABASE_URL="postgres://postgres:postgres@axum-seaorm-db:5432/axum_seaorm" \
-  -e RUST_LOG="axum_seaorm=info,tower_http=info" \
-  axum-seaorm:prod
-```
-
-The API usage is the same as the development environment, see [API Usage](#api-usage).
-
-### Production Container Management
-
-```bash
-# View logs
-docker logs axum-seaorm-prod
-
-# Stop container
-docker stop axum-seaorm-prod
-
-# Remove container
-docker rm axum-seaorm-prod
+│   └── init.sql
+│
+├── pgadmin_storage/
+├── Dockerfile.dev
+├── Dockerfile
+├── docker-compose.yml
+├── Cargo.toml
+└── README.md
 ```
 
 ---
 
-## API Usage
+## ⚙️ Environment Variables (`.env`)
 
-**Base URL:** `http://localhost:3000`
+```
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=axum_seaorm
+POSTGRES_PORT=5435
 
-| Method | Endpoint      | Description    |
-| -----: | ------------- | -------------- |
-|    GET | `/`           | Health check   |
-|   POST | `/users`      | Create user    |
-|    GET | `/users`      | List users     |
-|    GET | `/users/{id}` | Get user by ID |
-|    PUT | `/users/{id}` | Update user    |
-| DELETE | `/users/{id}` | Delete user    |
+DB_HOST=db
+DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:5432/${POSTGRES_DB}
 
-### Health Check
+RUST_LOG=axum_seaorm=debug,tower_http=debug
 
-```bash
-curl http://localhost:3000/
-# {"status":"ok"}
+APP_PORT=3000
+
+PGADMIN_EMAIL=admin@example.com
+PGADMIN_PASSWORD=admin123
+PGADMIN_PORT=8080
+
+PGADMIN_EMAIL_ESCAPED=admin_example.com
 ```
 
-### Create User
+---
 
-```bash
-curl -X POST http://localhost:3000/users \
-  -H "Content-Type: application/json" \
-  -d '{"name":"John Doe","email":"john@example.com"}'
+## 🐳 Docker Compose (`docker-compose.yml`)
+
+```
+version: "3.8"
+
+services:
+  db:
+    image: postgres:17
+    container_name: axum-seaorm-db
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+    dockerfile: Dockerfile.dev
+    container_name: axum-seaorm-app
+    ports:
+      - "${APP_PORT}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      RUST_LOG: ${RUST_LOG}
+    volumes:
+      - ./src:/app/src:ro
+      - ./Cargo.toml:/app/Cargo.toml:ro
+      - cargo_cache:/usr/local/cargo/registry
+      - target_cache:/app/target
+
+  pgadmin:
+    image: dpage/pgadmin4:8.5
+    container_name: axum-seaorm-pgadmin
+    env_file:
+      - ./.env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "${PGADMIN_PORT}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin_storage:/var/lib/pgadmin/storage/${PGADMIN_EMAIL_ESCAPED}
+
+volumes:
+  postgres_data:
+  cargo_cache:
+  target_cache:
+  pgadmin_data:
+  pgadmin_storage:
 ```
 
-### List Users
+---
 
-```bash
-curl http://localhost:3000/users
+## ▶️ Run the Project
+
+### Start everything
+```
+docker compose up --build
 ```
 
-### Get User by ID
+### Swagger UI
+👉 http://localhost:3000/swagger
 
-```bash
-curl http://localhost:3000/users/1
+### PgAdmin
+👉 http://localhost:8080  
+Login:
+- Email: from `.env`
+- Password: from `.env`
+
+### Register PostgreSQL server in PgAdmin
+
+```
+Host: db
+Port: 5432
+Username: postgres
+Password: postgres
 ```
 
-### Update User
+---
 
+## 📸 Swagger Screenshot
+
+<img src="https://gcdnb.pbrd.co/images/NWzKLuHTrGHO.png" alt="Swagger Screenshot" style="max-width:100%; border:1px solid #ddd; border-radius:8px;" />
+
+---
+## 🚀 Production Build (Optimized Docker Image)
+
+A separate production-ready Dockerfile is included.
+
+### Build production image:
 ```bash
-curl -X PUT http://localhost:3000/users/1 \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Jane Doe"}'
+docker build -f Dockerfile -t axum-api .
+```
+```bash
+docker run -p 3000:3000 --env-file .env axum-api
 ```
 
-### Delete User
+---
+## 🧹 Clean Everything
 
-```bash
-curl -X DELETE http://localhost:3000/users/1 -i
-# HTTP/1.1 204 No Content
 ```
+docker compose down -v
+```
+
+---
+
+## 📝 License
+MIT
